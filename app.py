@@ -21,24 +21,23 @@ def index():
 
 @app.route('/provision_enterprise', methods=['POST'])
 def provision_enterprise():
-
-    organization_name = request.form['org']
-    print(organization_name)
-    organization = request.form['domain']
-    print(organization)
-    organization_domains = organization.split()
-    print(organization_domains)
-
-    organization = workos_client.organizations.create_organization({
-        'name': organization_name,
-        'domains': organization_domains
-    })
-
-    # You should persist `organization['id']` since it will be needed
-    # to generate a Portal Link.
+    # Create global variable for org_id
     global org_id
-    org_id = organization['id']
-    print(org_id)
+    organization_name = request.form['org']
+    organization_domains = request.form['domain'].split()
+
+    # Check if a matching domain already exists and set global org_id if there is a match
+    orgs = workos_client.organizations.list_organizations(domains=organization_domains)
+    if len(orgs["data"]) > 0:
+        org_id = orgs['data'][0]['id']
+
+    # Otherwise create a new Organization and set the global org_id
+    else: 
+        organization = workos_client.organizations.create_organization({
+            'name': organization_name,
+            'domains': organization_domains
+        })
+        org_id = organization['id']
 
     return render_template('org_logged_in.html')
 
